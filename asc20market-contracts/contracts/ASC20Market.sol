@@ -9,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/IASC20Market.sol";
-import { OrderTypes, ASC20Order } from "./lib/OrderTypes.sol";
+import {OrderTypes, ASC20Order} from "./lib/OrderTypes.sol";
 
 contract ASC20Market is
     IASC20Market,
@@ -55,7 +55,9 @@ contract ASC20Market is
         PausableUpgradeable._unpause();
     }
 
-    function updateTrustedVerifier(address _trustedVerifier) external onlyOwner {
+    function updateTrustedVerifier(
+        address _trustedVerifier
+    ) external onlyOwner {
         trustedVerifier = _trustedVerifier;
         emit NewTrustedVerifier(_trustedVerifier);
     }
@@ -65,17 +67,25 @@ contract ASC20Market is
         emit AllowBatchOrdersUpdate(_allowBatch);
     }
 
-    function batchMatchOrders(ASC20Order[] calldata orders, address recipient) public payable nonReentrant whenNotPaused {
+    function batchMatchOrders(
+        ASC20Order[] calldata orders,
+        address recipient
+    ) public payable nonReentrant whenNotPaused {
         require(allowBatch, "Batch operation is not allowed");
         require(orders.length <= 20, "Too much orders");
-        uint16 matched = 0; 
+        uint16 matched = 0;
         uint256 userBalance = msg.value;
-        for (uint i=0; i<orders.length; i++) {
+        for (uint i = 0; i < orders.length; i++) {
             ASC20Order calldata order = orders[i];
 
             // Verify whether order availability
-            bytes32 verifyHash = keccak256(abi.encodePacked(order.seller, order.listId));
-            if (cancelledOrFilled[verifyHash] || order.nonce != userNonces[order.seller]) {
+            bytes32 verifyHash = keccak256(
+                abi.encodePacked(order.seller, order.listId)
+            );
+            if (
+                cancelledOrFilled[verifyHash] ||
+                order.nonce != userNonces[order.seller]
+            ) {
                 // Don't throw error
                 continue;
             }
@@ -83,7 +93,6 @@ contract ASC20Market is
             // Verify the order
             _verifyOrder(order, true);
 
-            
             uint256 orderAmount = order.price * order.amount;
             require(userBalance >= orderAmount, "Insufficient balance");
             userBalance -= orderAmount;
@@ -100,11 +109,18 @@ contract ASC20Market is
 
         // refund balance
         if (userBalance > 0) {
-            _transferETHWithGasLimit(msg.sender, userBalance, _GAS_STIPEND_NO_STORAGE_WRITES);
+            _transferETHWithGasLimit(
+                msg.sender,
+                userBalance,
+                _GAS_STIPEND_NO_STORAGE_WRITES
+            );
         }
     }
 
-    function executeOrder(ASC20Order calldata order, address recipient) public payable override nonReentrant whenNotPaused {
+    function executeOrder(
+        ASC20Order calldata order,
+        address recipient
+    ) public payable override nonReentrant whenNotPaused {
         // Check the maker ask order
         bytes32 verifyHash = _verifyOrderHash(order, true);
 
@@ -112,7 +128,9 @@ contract ASC20Market is
         _executeOrder(order, recipient, verifyHash, msg.value);
     }
 
-    function cancelOrder(ASC20Order calldata order) public override nonReentrant whenNotPaused {
+    function cancelOrder(
+        ASC20Order calldata order
+    ) public override nonReentrant whenNotPaused {
         // Check the maker ask order
         bytes32 verifyHash = _verifyOrderHash(order, false);
 
@@ -124,7 +142,9 @@ contract ASC20Market is
      * @dev Cancel multiple orders
      * @param orders Orders to cancel
      */
-    function cancelOrders(ASC20Order[] calldata orders) external override nonReentrant whenNotPaused {
+    function cancelOrders(
+        ASC20Order[] calldata orders
+    ) external override nonReentrant whenNotPaused {
         for (uint8 i = 0; i < orders.length; i++) {
             bytes32 verifyHash = _verifyOrderHash(orders[i], false);
             _cancelOrder(orders[i], verifyHash);
@@ -135,27 +155,34 @@ contract ASC20Market is
      * @notice Verify the validity of the asc20 token order
      * @param order maker asc20 token order
      */
-    function _verifyOrderHash(ASC20Order calldata order, bool verifySeller) internal view returns (bytes32) {
-
-
-
+    function _verifyOrderHash(
+        ASC20Order calldata order,
+        bool verifySeller
+    ) internal view returns (bytes32) {
         // Verify whether order availability
-        bytes32 verifyHash = keccak256(abi.encodePacked(order.seller, order.listId));
-        if (cancelledOrFilled[verifyHash] || order.nonce != userNonces[order.seller]) {
+        bytes32 verifyHash = keccak256(
+            abi.encodePacked(order.seller, order.listId)
+        );
+        if (
+            cancelledOrFilled[verifyHash] ||
+            order.nonce != userNonces[order.seller]
+        ) {
             revert NoncesInvalid();
         }
 
         _verifyOrder(order, verifySeller);
 
-
         return verifyHash;
     }
 
-     /**
+    /**
      * @notice Verify the validity of the asc20 token order
      * @param order maker asc20 token order
      */
-    function _verifyOrder(ASC20Order calldata order, bool verifySeller) internal view  {
+    function _verifyOrder(
+        ASC20Order calldata order,
+        bool verifySeller
+    ) internal view {
         // Verify the signer is not address(0)
         if (order.seller == address(0)) {
             revert SignerInvalid();
@@ -171,13 +198,18 @@ contract ASC20Market is
             order.s,
             _domainSeparatorV4()
         );
-        
+
         if (!isValid) {
             revert SignatureInvalid();
         }
     }
 
-    function _executeOrder(ASC20Order calldata order, address recipient, bytes32 verifyHash, uint256 userBalance) internal {
+    function _executeOrder(
+        ASC20Order calldata order,
+        address recipient,
+        bytes32 verifyHash,
+        uint256 userBalance
+    ) internal {
         uint256 toBePaid = order.price * order.amount;
         if (toBePaid != userBalance) {
             revert MsgValueInvalid();
@@ -187,7 +219,10 @@ contract ASC20Market is
         require(recipient != address(0), "invalid recipient");
 
         // Verify whether order has expired
-        if ((order.listingTime > block.timestamp) || (order.expirationTime < block.timestamp) ) {
+        if (
+            (order.listingTime > block.timestamp) ||
+            (order.expirationTime < block.timestamp)
+        ) {
             revert OrderExpired();
         }
 
@@ -197,7 +232,11 @@ contract ASC20Market is
         // Pay eths
         _transferEths(order);
 
-        emit avascriptions_protocol_TransferASC20TokenForListing(order.seller, recipient, order.listId);
+        emit avascriptions_protocol_TransferASC20TokenForListing(
+            order.seller,
+            recipient,
+            order.listId
+        );
 
         emit ASC20OrderExecuted(
             order.seller,
@@ -211,7 +250,10 @@ contract ASC20Market is
         );
     }
 
-    function _cancelOrder(ASC20Order calldata order, bytes32 verifyHash) internal {
+    function _cancelOrder(
+        ASC20Order calldata order,
+        bytes32 verifyHash
+    ) internal {
         if (order.expirationTime < block.timestamp) {
             revert ExpiredSignature();
         }
@@ -219,9 +261,17 @@ contract ASC20Market is
         // Update order status to true (prevents replay)
         cancelledOrFilled[verifyHash] = true;
 
-        emit avascriptions_protocol_TransferASC20TokenForListing(order.seller, order.seller, order.listId);
+        emit avascriptions_protocol_TransferASC20TokenForListing(
+            order.seller,
+            order.seller,
+            order.listId
+        );
 
-        emit ASC20OrderCanceled(order.seller, order.listId, uint64(block.timestamp));
+        emit ASC20OrderCanceled(
+            order.seller,
+            order.listId,
+            uint64(block.timestamp)
+        );
     }
 
     function _transferEths(ASC20Order calldata order) internal {
@@ -229,14 +279,23 @@ contract ASC20Market is
 
         // Pay protocol fee
         if (order.creatorFeeRate >= 0) {
-            uint256 protocolFeeAmount = finalSellerAmount * order.creatorFeeRate / 10000;
+            uint256 protocolFeeAmount = (finalSellerAmount *
+                order.creatorFeeRate) / 10000;
             finalSellerAmount -= protocolFeeAmount;
             if (order.creator != address(this)) {
-                _transferETHWithGasLimit(order.creator, protocolFeeAmount, _GAS_STIPEND_NO_STORAGE_WRITES);
+                _transferETHWithGasLimit(
+                    order.creator,
+                    protocolFeeAmount,
+                    _GAS_STIPEND_NO_STORAGE_WRITES
+                );
             }
         }
 
-        _transferETHWithGasLimit(order.seller, finalSellerAmount, _GAS_STIPEND_NO_STORAGE_WRITES);
+        _transferETHWithGasLimit(
+            order.seller,
+            finalSellerAmount,
+            _GAS_STIPEND_NO_STORAGE_WRITES
+        );
     }
 
     /**
@@ -245,7 +304,11 @@ contract ASC20Market is
      * @param amount Amount to transfer
      * @param gasLimit Gas limit to perform the ETH transfer
      */
-    function _transferETHWithGasLimit(address to, uint256 amount, uint256 gasLimit) internal {
+    function _transferETHWithGasLimit(
+        address to,
+        uint256 amount,
+        uint256 gasLimit
+    ) internal {
         bool success;
         assembly {
             success := call(gasLimit, to, amount, 0, 0, 0, 0)
@@ -255,10 +318,19 @@ contract ASC20Market is
         }
     }
 
-    function _verify(bytes32 orderHash, address signer, uint8 v, bytes32 r, bytes32 s, bytes32 domainSeparator) internal pure returns (bool) {
+    function _verify(
+        bytes32 orderHash,
+        address signer,
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
+        bytes32 domainSeparator
+    ) internal pure returns (bool) {
         require(v == 27 || v == 28, "Invalid v parameter");
         // is need Bulk?
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, orderHash));
+        bytes32 digest = keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator, orderHash)
+        );
 
         address recoveredSigner = ecrecover(digest, v, r, s);
         if (recoveredSigner == address(0)) {
@@ -268,13 +340,18 @@ contract ASC20Market is
         }
     }
 
-    function withdrawETH(address payable to, uint256 amount) external onlyOwner {
+    function withdrawETH(
+        address payable to,
+        uint256 amount
+    ) external onlyOwner {
         Address.sendValue(to, amount);
     }
 
-    function withdrawUnexpectedERC20(address token, address to, uint256 amount) external onlyOwner {
+    function withdrawUnexpectedERC20(
+        address token,
+        address to,
+        uint256 amount
+    ) external onlyOwner {
         IERC20Upgradeable(token).safeTransfer(to, amount);
     }
-
-
 }

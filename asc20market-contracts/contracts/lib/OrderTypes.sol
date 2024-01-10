@@ -5,7 +5,7 @@ struct ASC20Order {
     address seller; // signer of the asc20 token seller
     address creator; // deployer of the asc20 token creator
     bytes32 listId;
-    string ticker; 
+    string ticker;
     uint256 amount;
     uint256 price;
     uint256 nonce; // order nonce (must be unique unless new maker order is meant to override existing one e.g., lower ask price)
