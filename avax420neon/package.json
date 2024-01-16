@@ -1,0 +1,10 @@
+{
+  "license": "MIT",
+  "scripts": {
+    "compile": "yarn hardhat compile"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "4.3",
+    "hardhat": "^2.19.4"
+  }
+}
