@@ -8,29 +8,34 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
+ * @title Analyst : KT
+ * @title Analyze Link : https://github.com/ETH-KT/ContractAnalysis
+ */
+
+/**
  * @dev 申明Magic接口,在这里只写了mint方法，实例化后的合约也只能调用mint方法
  */
 interface IMagic {
     function mint(address to, uint256 numberOfTokens) external;
 }
 
-/**
- * uriPrefix1,uriPrefix2,uriPrefix3,uriPrefix4,uriPrefix5 URI前缀
- * uriSuffix 后缀
- * @notice 这里使用5种资源，分别对应1级白土地、2级浅蓝土地、3级深蓝土地、4级金土地、5级红土地
- * MAX_SUPPLY 总供应量10000
- * PRICE_PER_TOKEN mint一个的价格
- * maxMintPerTx 每次最多mint多少个
- * erc20Token BNeon代币地址
- * magic 潘多拉魔盒NFT地址
- * tokenLevels 每个TokenId对应的土地级别
- * inviteCounts 邀请数量
- * claimedErc20Rewards 已取出的BNeon代币
- * claimedNftcRewards 已取出的Magic魔盒
- * erc20RewardPerInvite 每邀请一个可获得BNeon代币数量
- * nftcRewardPer10Invites 每邀请10个可获得Magic魔盒数量
- */
 contract Land is ERC721, ERC721Enumerable, Ownable {
+    /**
+     * uriPrefix1,uriPrefix2,uriPrefix3,uriPrefix4,uriPrefix5 URI前缀
+     * uriSuffix 后缀
+     * @notice 这里使用5种资源，分别对应1级白土地、2级浅蓝土地、3级深蓝土地、4级金土地、5级红土地
+     * MAX_SUPPLY 总供应量10000
+     * PRICE_PER_TOKEN mint一个的价格
+     * maxMintPerTx 每次最多mint多少个
+     * erc20Token BNeon代币地址
+     * magic 潘多拉魔盒NFT地址
+     * tokenLevels 每个TokenId对应的土地级别
+     * inviteCounts 邀请数量
+     * claimedErc20Rewards 已取出的BNeon代币
+     * claimedNftcRewards 已取出的Magic魔盒
+     * erc20RewardPerInvite 每邀请一个可获得BNeon代币数量
+     * nftcRewardPer10Invites 每邀请10个可获得Magic魔盒数量
+     */
     using Strings for uint256;
 
     string public uriPrefix1 =
@@ -141,8 +146,7 @@ contract Land is ERC721, ERC721Enumerable, Ownable {
      * uint256(keccak256(abi.encodePacked(block.timestamp, tokenId))) % 100;
      * 使用abi.encodePacked对当前区块时间戳和tokenId进行编码，在进行哈希运算,再转为uint256类型，在进行100取模，将随机数控制在0-99
      * determineLevel(randomNum),根据随机数给tokenId分配等级
-     * @notice 通过block.timestamp是可以被预测的,但是呢，时间戳是由区块链网络提供的，并且在矿工创建新的区块时确定的时间戳的值，只能通过矿工参与攻击，如果是合约攻击，网络延迟很难攻击成功的
-     * 一般的项目也用不起Chainlink VRF啊，而且做成这种NFT随机mint模式,使用Chainlink VRF成本提高了，体验感还不好。
+     * @notice 通过block.timestamp是可被预测,被攻击的
      */
     function assignLevel(uint256 tokenId) private {
         uint256 randomNum = uint256(

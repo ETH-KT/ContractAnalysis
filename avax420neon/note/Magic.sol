@@ -6,6 +6,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+/**
+ * @title Analyst : KT
+ * @title Analyze Link : https://github.com/ETH-KT/ContractAnalysis
+ */
+
 contract Magic is ERC721URIStorage, Ownable {
     /**
      *  using Strings for uint256; 给 uint256类型附加Strings方法,作为库，uint256可作为第一个参数直接调用方法
